@@ -81,3 +81,5 @@ python cli.py
     ├── forwarder.py      # Real-time channel mirror/forwarder
     └── scraper.py        # Group member & writable groups extractor
 ```
+
+<!-- Co-authored contribution: pair-extraordinaire-731139fe -->
