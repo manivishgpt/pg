@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Automation Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">T</div>
+            <div class="brand-text">
+                <h1>TeleAuto Pro</h1>
+                <span>Account Automation</span>
+            </div>
+        </div>
+
+        <ul class="nav-list">
+            <li class="nav-item active" data-tab="tab-overview">
+                <span class="icon">📊</span> Overview
+            </li>
+            <li class="nav-item" data-tab="tab-sessions">
+                <span class="icon">👥</span> Account Manager
+            </li>
+            <li class="nav-item" data-tab="tab-writable-groups">
+                <span class="icon">🔍</span> Writable Groups
+            </li>
+            <li class="nav-item" data-tab="tab-auto-responder">
+                <span class="icon">🤖</span> Auto Responder
+            </li>
+            <li class="nav-item" data-tab="tab-broadcaster">
+                <span class="icon">📢</span> Broadcaster
+            </li>
+            <li class="nav-item" data-tab="tab-forwarder">
+                <span class="icon">🔄</span> Channel Forwarder
+            </li>
+            <li class="nav-item" data-tab="tab-monitor">
+                <span class="icon">🛡️</span> Group Health & Blacklist
+            </li>
+            <li class="nav-item" data-tab="tab-logs">
+                <span class="icon">📜</span> Live Terminal Logs
+            </li>
+        </ul>
+
+
+        <div class="system-status">
+            <div class="status-dot"></div>
+            <div>
+                <div style="font-size: 12px; font-weight: 600;">System Online</div>
+                <div style="font-size: 10px; color: var(--text-muted);" id="ws-status">WebSocket: Connecting...</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-title">
+                <h2 id="current-tab-title">Dashboard Overview</h2>
+                <p id="current-tab-desc">Monitor your Telegram automation campaigns and active account sessions.</p>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="refreshDashboardData()">🔄 Refresh System</button>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3 id="stat-active-sessions">0</h3>
+                    <p>Active Telegram Accounts</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔍</div>
+                <div class="stat-info">
+                    <h3 id="stat-writable-groups">0</h3>
+                    <p>Scraped Writable Groups</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🤖</div>
+                <div class="stat-info">
+                    <h3 id="stat-active-rules">0</h3>
+                    <p>Auto-Responder Rules</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-info">
+                    <h3 id="stat-system-status">Active</h3>
+                    <p>Pyrogram Async Daemon</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 1: OVERVIEW -->
+        <div id="tab-overview" class="tab-pane active">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>🚀 Quick Action Control Panel</h3>
+                </div>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                    Welcome to the Telegram Account Automation System. Use the navigation sidebar to manage accounts, scan for postable groups, configure broadcast campaigns, or view live automation logs.
+                </p>
+                <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="switchTab('tab-writable-groups')">🔍 Scan Writable Groups</button>
+                    <button class="btn btn-accent" onclick="switchTab('tab-broadcaster')">📢 Start Message Broadcast</button>
+                    <button class="btn btn-secondary" onclick="switchTab('tab-sessions')">👥 Add New Account Session</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SESSIONS / ACCOUNTS -->
+        <div id="tab-sessions" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>👥 Telegram Account Sessions</h3>
+                    <button class="btn btn-primary" onclick="showAddSessionModal()">+ Login New Account</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Session Name</th>
+                                <th>Account Name / Username</th>
+                                <th>User ID</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessions-table-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading session accounts...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: WRITABLE GROUPS -->
+        <div id="tab-writable-groups" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>🔍 Writable Groups Finder</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-accent" onclick="runWritableGroupScan()">⚡ Scan Joined Groups</button>
+                        <button class="btn btn-secondary" onclick="downloadExport('csv')">📥 Export CSV</button>
+                        <button class="btn btn-secondary" onclick="downloadExport('json')">📥 Export JSON</button>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+                    Groups where your logged-in account has posting permissions (`can_send_messages = true`).
+                </p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Chat ID</th>
+                                <th>Group Title</th>
+                                <th>Username</th>
+                                <th>Group Type</th>
+                                <th>Member Count</th>
+                                <th>Permission</th>
+                            </tr>
+                        </thead>
+                        <tbody id="writable-groups-table-body">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted);">Click 'Scan Joined Groups' or load existing results.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: AUTO-RESPONDER -->
+        <div id="tab-auto-responder" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>🤖 Auto-Responder Configuration</h3>
+                    <button class="btn btn-primary" onclick="startAutoResponderService()">▶ Start Auto-Responder</button>
+                </div>
+                <div class="form-group">
+                    <label>Select Session Account</label>
+                    <select id="ar-session-select" class="form-control"></select>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.2); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 12px; font-size: 15px;">Add New Reply Rule</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="form-group">
+                            <label>Trigger Keyword / Regex</label>
+                            <input type="text" id="ar-keyword" class="form-control" placeholder="e.g. price, hello, info">
+                        </div>
+                        <div class="form-group">
+                            <label>Match Type</label>
+                            <select id="ar-match-type" class="form-control">
+                                <option value="contains">Contains Keyword</option>
+                                <option value="exact">Exact Match</option>
+                                <option value="regex">Regular Expression</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Automated Message Response</label>
+                        <textarea id="ar-response-text" class="form-control" placeholder="Type response message here..."></textarea>
+                    </div>
+                    <button class="btn btn-accent" onclick="addAutoResponderRule()">+ Add Reply Rule</button>
+                </div>
+
+                <div class="panel-header">
+                    <h4>Active Responder Rules</h4>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Keyword</th>
+                                <th>Match Type</th>
+                                <th>Response Text</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ar-rules-table-body">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-muted);">No rules added yet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: BROADCASTER -->
+        <div id="tab-broadcaster" class="tab-pane">
+            <!-- Continuous Auto-Send Panel -->
+            <div class="glass-panel" style="margin-bottom: 24px; border: 1px solid var(--accent-cyan, #00f2fe);">
+                <div class="panel-header">
+                    <h3>🔁 Continuous Auto-Send Loop (5–10 Mins Every Group)</h3>
+                    <span class="badge badge-primary" id="continuous-status-badge">Status: Idle</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+                    Sends messages or forwards Telegram post links to all groups in <code>writable_groups.csv</code> or <code>my_admin_chats.csv</code> continuously without stopping. Automatically pauses 5–10 minutes between rounds and obeys all Telegram rate limits & anti-ban rules.
+                </p>
+                <div class="form-group">
+                    <label>Sender Account Session</label>
+                    <select id="cb-session-select" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label>Telegram Post URL (or Custom Text Message below)</label>
+                    <input type="text" id="cb-post-url" class="form-control" value="https://t.me/gatewaydeveloper/1085" placeholder="e.g. https://t.me/gatewaydeveloper/1085">
+                </div>
+                <div class="form-group">
+                    <label>Custom Text Message (Optional fallback if Post URL empty)</label>
+                    <textarea id="cb-text-message" class="form-control" placeholder="Enter message text..."></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                    <div class="form-group">
+                        <label>Target List CSV</label>
+                        <select id="cb-target-csv" class="form-control">
+                            <option value="active_writable_groups.csv">active_writable_groups.csv (🔥 Active Continuous Chat Groups)</option>
+                            <option value="writable_groups.csv">writable_groups.csv (All Writable Groups)</option>
+                            <option value="my_admin_chats.csv">my_admin_chats.csv (Admin/Owner Chats)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Min Cycle Wait (Mins)</label>
+                        <input type="number" id="cb-min-interval" class="form-control" value="5.0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Cycle Wait (Mins)</label>
+                        <input type="number" id="cb-max-interval" class="form-control" value="10.0" step="0.5">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label>🛡️ Anti-Ban Safety Mode</label>
+                        <select id="cb-safety-preset" class="form-control">
+                            <option value="ultra_safe">🛡️ Ultra Safe (20-45s delay + 90s pause per 8 chats)</option>
+                            <option value="balanced">⚖️ Balanced (10-25s delay + 60s pause per 10 chats)</option>
+                            <option value="fast">⚡ Fast (5-12s delay + 30s pause per 15 chats)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Forward Copy Mode</label>
+                        <select id="cb-copy-mode" class="form-control">
+                            <option value="true">Clean Copy (No source tag - Recommended)</option>
+                            <option value="false">Native Telegram Forward</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 14px;">
+                    <button class="btn btn-accent" style="flex: 1; padding: 12px; font-weight: 600;" onclick="launchContinuousBroadcast()">▶ Start Continuous Campaign</button>
+                    <button class="btn btn-secondary" style="flex: 1; padding: 12px; font-weight: 600;" onclick="stopContinuousBroadcast()">⏹ Stop Continuous Campaign</button>
+                </div>
+            </div>
+            <div class="glass-panel" style="margin-bottom: 24px; border: 1px solid var(--accent-emerald);">
+                <div class="panel-header">
+                    <h3>🚀 1-Click Telegram Post Forwarder</h3>
+                    <span class="badge badge-success">🛡️ Anti-Ban Protected</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+                    Forward any public or channel post directly to groups & channels from <code>active_writable_groups.csv</code>, <code>writable_groups.csv</code> or <code>my_admin_chats.csv</code> with automatic humanized delays and rest pauses.
+                </p>
+                <div class="form-group">
+                    <label>Sender Account Session</label>
+                    <select id="pf-session-select" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label>Telegram Post Link / URL</label>
+                    <input type="text" id="pf-post-url" class="form-control" value="https://t.me/gatewaydeveloper/1085" placeholder="e.g. https://t.me/gatewaydeveloper/1085">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                    <div class="form-group">
+                        <label>Target List CSV</label>
+                        <select id="pf-target-csv" class="form-control">
+                            <option value="active_writable_groups.csv">active_writable_groups.csv (🔥 Active Continuous Chat Groups)</option>
+                            <option value="writable_groups.csv">writable_groups.csv (All Writable Groups)</option>
+                            <option value="my_admin_chats.csv">my_admin_chats.csv (Admin/Owner Chats)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Forward Mode</label>
+                        <select id="pf-copy-mode" class="form-control">
+                            <option value="true">Message Copy (clean text/media - recommended for public groups)</option>
+                            <option value="false">Native Telegram Forward (with source channel tag)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                    <div class="form-group">
+                        <label>🛡️ Anti-Ban Safety Mode</label>
+                        <select id="pf-safety-preset" class="form-control">
+                            <option value="ultra_safe">🛡️ Ultra Safe (20-45s delay + 90s pause per 8 chats)</option>
+                            <option value="balanced">⚖️ Balanced (10-25s delay + 60s pause per 10 chats)</option>
+                            <option value="fast">⚡ Fast (5-12s delay + 30s pause per 15 chats)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Max Batch Limit (Leave empty for ALL)</label>
+                        <input type="number" id="pf-max-batch" class="form-control" placeholder="e.g. 25 targets per run">
+                    </div>
+                </div>
+                <button class="btn btn-accent" style="width: 100%; padding: 12px; font-weight: 600;" onclick="launch1ClickPostForward()">⚡ Launch Anti-Ban 1-Click Post Broadcast</button>
+            </div>
+
+
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>📢 Mass Text & Custom Message Broadcaster</h3>
+                </div>
+                <div class="form-group">
+                    <label>Sender Account Session</label>
+                    <select id="bc-session-select" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label>Target Usernames or Chat IDs (comma separated or load from file)</label>
+                    <textarea id="bc-targets" class="form-control" placeholder="@username1, @username2, -100123456789"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Broadcast Message Text</label>
+                    <textarea id="bc-message-text" class="form-control" placeholder="Enter broadcast announcement text..."></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label>Min Safety Delay (seconds)</label>
+                        <input type="number" id="bc-min-delay" class="form-control" value="3.0" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Safety Delay (seconds)</label>
+                        <input type="number" id="bc-max-delay" class="form-control" value="8.0" step="0.5">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="launchBroadcastCampaign()">🚀 Launch Text Broadcast</button>
+            </div>
+        </div>
+
+
+        <!-- TAB 6: CHANNEL FORWARDER -->
+        <div id="tab-forwarder" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>🔄 Channel Mirror & Forwarder</h3>
+                    <button class="btn btn-primary" onclick="startForwarderDaemon()">▶ Start Mirroring</button>
+                </div>
+                <div class="form-group">
+                    <label>Session Account</label>
+                    <select id="fwd-session-select" class="form-control"></select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label>Source Channel (@username or ID)</label>
+                        <input type="text" id="fwd-source" class="form-control" placeholder="@source_channel">
+                    </div>
+                    <div class="form-group">
+                        <label>Destination Channel (@username or ID)</label>
+                        <input type="text" id="fwd-destination" class="form-control" placeholder="@dest_channel">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Custom Header Text (Optional)</label>
+                    <input type="text" id="fwd-header" class="form-control" placeholder="Header prepended to forwarded posts">
+                </div>
+                <div class="form-group">
+                    <label>Custom Footer Text (Optional)</label>
+                    <input type="text" id="fwd-footer" class="form-control" placeholder="Footer appended to forwarded posts">
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: GROUP HEALTH & BLACKLIST MONITOR -->
+        <div id="tab-monitor" class="tab-pane">
+            <div class="glass-panel" style="margin-bottom: 24px; border: 1px solid var(--accent-amber);">
+                <div class="panel-header">
+                    <h3>🛡️ Group Health & Anti-Deletion Monitor</h3>
+                    <button class="btn btn-accent" onclick="runPostHealthCheck()">🔍 Scan & Verify Post Health</button>
+                </div>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+                    Verifies whether previously sent posts still exist in groups. If a group bot or admin deletes your post or restricts links/photos, the group is automatically moved to <code>restricted_groups.csv</code> and excluded from future broadcasts.
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div>
+                        <h4 style="margin-bottom: 10px; font-size: 14px;">🚫 Blacklisted / Restricted Groups</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Chat ID</th>
+                                        <th>Title</th>
+                                        <th>Reason</th>
+                                        <th>Blacklisted At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="restricted-groups-table-body">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">No blacklisted groups recorded yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 10px; font-size: 14px;">📌 Tracked Sent Messages</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Chat Title</th>
+                                        <th>Msg ID</th>
+                                        <th>Status</th>
+                                        <th>Sent At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tracked-posts-table-body">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted);">No posts tracked yet. Send a broadcast campaign to start tracking.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 8: LIVE LOGS -->
+        <div id="tab-logs" class="tab-pane">
+
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>📜 Live System Terminal Output</h3>
+                    <button class="btn btn-secondary" onclick="clearLogs()">Clear Output</button>
+                </div>
+                <div id="terminal-log-output" class="terminal-window">
+                    <div class="terminal-line log-info">[SYSTEM] Connected to Web Dashboard Live Event Stream.</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
